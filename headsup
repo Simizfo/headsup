@@ -37,7 +37,7 @@ if sys.argv[1] == '--help' or sys.argv[1] == '-h':
     print_help()
     exit()
 
-interval_time = 5
+interval_time = 15
     
 print('Starting up...')
 
@@ -69,10 +69,6 @@ class HeadsupThread(Thread):
             new_soup = BeautifulSoup(res.content)
             new_soup_body = new_soup.find('body')
 
-            print('\n')
-            print(old_soup_body)
-            print(new_soup_body)
-            
             if str(old_soup_body) != str(new_soup_body):
                 print('\n')
                 print('SOMETHING CHANGED!!! Old length: ' + str(len(old_soup_body)) + ' vs new length: ' + str(len(new_soup_body)))
