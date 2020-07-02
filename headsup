@@ -1,0 +1,83 @@
+#!/usr/bin/python3
+
+from threading import Thread, Event
+import sys
+
+try:
+    import requests
+    from bs4 import BeautifulSoup
+except:
+    print('Headsup requires the requests and bs4 modules. Do you want to install them now? (y/n)')
+    sel = input()
+    if sel == 'y':
+        import subprocess
+        subprocess.check_call([sys.executable, "-m", "pip", "install", 'requests'])
+        subprocess.check_call([sys.executable, "-m", "pip", "install", 'bs4'])
+    else:
+        print('You chose to not install the requisites. Aborting...')
+        exit()
+finally:
+    print('Requisites satisfied. Now launching Headsup')
+    import requests
+    from bs4 import BeautifulSoup
+
+def print_help():
+    print('''
+    Headsup: a tool to check for updates on a website.
+    Usage:  headsup url
+
+    where url is the page to check for changes.
+             ''')
+
+if len(sys.argv) < 2:
+    print_help()
+    exit()
+
+if sys.argv[1] == '--help' or sys.argv[1] == '-h':
+    print_help()
+    exit()
+
+interval_time = 5
+    
+print('Starting up...')
+
+global lastres
+lastres = requests.get(sys.argv[1])
+
+print('Cycle set to repeat every ' + str(interval_time) + ' seconds')
+
+class HeadsupThread(Thread):
+
+    count = 0
+    interval = 5
+
+    def __init__(self, event, interval):
+        Thread.__init__(self)
+        self.interval = interval
+        self.stopped = event
+
+    def run(self):
+        while not self.stopped.wait(self.interval):
+            self.count += 1
+            print('Cycled ' + str(self.count) + ' times. Current interval set to ' + str(self.interval) + 's', end='\r')
+            res = requests.get(sys.argv[1])
+            global lastres
+
+            old_soup = BeautifulSoup(lastres.content)
+            old_soup_body = old_soup.find('body')
+
+            new_soup = BeautifulSoup(res.content)
+            new_soup_body = new_soup.find('body')
+
+            print('\n')
+            print(old_soup_body)
+            print(new_soup_body)
+            
+            if str(old_soup_body) != str(new_soup_body):
+                print('\n')
+                print('SOMETHING CHANGED!!! Old length: ' + str(len(old_soup_body)) + ' vs new length: ' + str(len(new_soup_body)))
+            lastres = res
+
+stop = Event()
+cycle = HeadsupThread(stop, interval_time)
+cycle.start()
